@@ -4,135 +4,184 @@ app = Flask(__name__)
 @app.route('/')
 def myapp():
     return """
-    <!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Email Sender</title>
+  <meta charset="UTF-8" />
+  <title>📍 My Location Finder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f5f7fa;
-      padding: 20px;
       margin: 0;
+      padding: 0;
+      background: #eef1f6;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
 
-    .container {
-      max-width: 500px;
-      margin: auto;
+    .app-container {
       background: #fff;
-      padding: 25px 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    h2 {
-      text-align: center;
-      color: #333;
-    }
-
-    input, textarea, button {
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      box-sizing: border-box;
-      transition: border-color 0.3s ease;
+      max-width: 420px;
     }
 
-    input:focus, textarea:focus {
-      border-color: #007BFF;
+    h2, h3 {
+      margin-top: 0;
+      color: #222;
+      text-align: center;
+    }
+
+    p {
+      margin: 8px 0;
+      color: #444;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px 14px;
+      margin-top: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    input:focus {
+      border-color: #007bff;
       outline: none;
     }
 
     button {
-      background-color: #007BFF;
+      background-color: #007bff;
       color: white;
-      border: none;
-      cursor: pointer;
       font-weight: bold;
+      cursor: pointer;
+      border: none;
+      transition: 0.2s ease;
     }
 
     button:hover {
       background-color: #0056b3;
     }
 
-    .success {
-      background-color: #d4edda;
-      color: #155724;
-      padding: 10px;
-      border-radius: 8px;
+    a {
+      display: block;
       margin-top: 10px;
+      text-align: center;
+      color: #007bff;
+      text-decoration: none;
     }
 
-    .error {
-      background-color: #f8d7da;
-      color: #721c24;
-      padding: 10px;
-      border-radius: 8px;
-      margin-top: 10px;
+    a:hover {
+      text-decoration: underline;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 30px 0 20px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .location-box {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .error-msg {
+      color: red;
+      text-align: center;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h2>📧 Send Email</h2>
-    <input type="email" id="to" placeholder="Recipient Email" required />
-    <input type="text" id="subject" placeholder="Email Subject" required />
-    <textarea id="body" placeholder="Enter your message here..." rows="6" required></textarea>
-    <button onclick="sendMail()">Send Email</button>
-    <div id="responseMessage"></div>
+  <div class="app-container">
+    <h2>📍 My Location Finder</h2>
+
+    <div class="section">
+      <h3>🧭 Your Current Location</h3>
+      <div class="location-box">
+        <p><strong>Latitude:</strong> <span id="lat">--</span></p>
+        <p><strong>Longitude:</strong> <span id="lon">--</span></p>
+        <a id="map-link" href="#" target="_blank">View on Google Maps</a>
+      </div>
+      <button onclick="getLocation()">📡 Get My Location</button>
+      <p id="error" class="error-msg"></p>
+    </div>
+
+    <hr />
+
+    <div class="section">
+      <h3>🔍 Search a Location</h3>
+      <input type="text" id="search-input" placeholder="e.g. Arya College Jaipur" />
+      <button onclick="searchLocation()">🔎 Search on Map</button>
+      <a id="search-link" href="#" target="_blank"></a>
+    </div>
   </div>
 
   <script>
-    function sendMail() {
-      const to = document.getElementById("to").value.trim();
-      const subject = document.getElementById("subject").value.trim();
-      const text = document.getElementById("body").value.trim();
+    function getLocation() {
+      const errorBox = document.getElementById("error");
+      errorBox.textContent = "";
 
-      if (!to || !subject || !text) {
-        showMessage("All fields are required.", true);
+      if (!navigator.geolocation) {
+        errorBox.textContent = "Geolocation is not supported by your browser.";
         return;
       }
 
-      fetch('http://localhost:3000/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ to, subject, text })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          showMessage("✅ Email sent successfully!");
-          clearForm();
-        } else {
-          showMessage("❌ Failed to send email: " + data.message, true);
-        }
-      })
-      .catch(err => showMessage("❌ Error: " + err.message, true));
+      navigator.geolocation.getCurrentPosition(success, error);
+
+      function success(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        document.getElementById("lat").textContent = lat.toFixed(6);
+        document.getElementById("lon").textContent = lon.toFixed(6);
+
+        const mapUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+        const link = document.getElementById("map-link");
+        link.href = mapUrl;
+        link.textContent = "📍 View on Google Maps";
+      }
+
+      function error(err) {
+        errorBox.textContent = "❌ Location error: " + err.message +
+          ". Make sure you're running on localhost or HTTPS.";
+      }
     }
 
-    function showMessage(msg, isError = false) {
-      const div = document.getElementById("responseMessage");
-      div.className = isError ? "error" : "success";
-      div.innerText = msg;
-    }
+    function searchLocation() {
+      const query = document.getElementById("search-input").value.trim();
+      if (!query) return alert("Please enter a place to search.");
 
-    function clearForm() {
-      document.getElementById("to").value = '';
-      document.getElementById("subject").value = '';
-      document.getElementById("body").value = '';
+      const encoded = encodeURIComponent(query);
+      const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+
+      const link = document.getElementById("search-link");
+      link.href = url;
+      link.textContent = `📍 View "${query}" on Google Maps`;
+
+      window.open(url, "_blank");
     }
   </script>
 
 </body>
-</html>    """
+</html>
+  """
 
 if __name__=="__main__":
     app.run(host='0.0.0.0' , port=5000)
